@@ -47,3 +47,48 @@ out.cancer.try <- randomForest(as.factor(diagnosis) ~ radius_worst + perimeter_w
 out.cancer.try
 
 # Dude this is freaking tight! (I think)
+
+
+# Create a dataset with half successes (warning), half failures (ticket)
+# Let failure be "B", no sign of cancer, and success be "M," cancerous
+
+all.fail <- subset(cancer,diagnosis=="B")
+n.fail <- dim(all.fail)[1]
+
+# SRS W/o replacement from successes
+all.success <- subset(cancer,diagnosis=="M")
+n.success <- dim(all.success)[1]
+
+set.seed(12)
+row.fail <- sample(n.fail,n.success)
+sample.fail <- all.fail[row.fail,]
+
+# Combine all.fail and sample.goods
+cancer.model <- rbind(all.success,sample.fail)
+# Confirm half success and half fail
+dim(cancer.model)
+table(cancer.model$diagnosis)
+
+# Create Train and Test datasets
+
+n.cancer.model <- dim(cancer.model)[1]
+cancer.rows <- sample(n.cancer.model,(n.cancer.model/2))
+cancer.train <- cancer.model[cancer.rows,]
+cancer.test <- cancer.model[-cancer.rows,]
+
+# Confirm similarity between the two
+table(cancer.train$diagnosis)
+table(cancer.test$diagnosis)
+
+
+# Random Forest Model
+
+out.cancer <- randomForest(x=cancer.train[,-2],y=cancer.train$diagnosis,
+                           xtest=cancer.test[,-2],ytest=cancer.test$diagnosis,
+                           replace=TRUE, # use bootstrap samples
+                           keep.forest=TRUE, # store all trees to make pred
+                           ntrees=50, # num of trees
+                           mtry=5, # rule of thumb is p(explvar)/3 (round down)
+                           nodesize=25 # how many observations? Go for big trees
+)
+
